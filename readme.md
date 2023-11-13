@@ -1,15 +1,17 @@
 # EEZYbotARM MK2 Robot Control with ESP32
 
+This repository contains the code and information to control the EEZYbotARM MK2 robot arm using an ESP32 microcontroller. The EEZYbotARM MK2 and MK3 are open-source 3D-printable robot arms that can be found on Thingiverse.
+
 EEZYbotARM MK2 :https://www.thingiverse.com/thing:1454048
+
 EEZYbotARM MK3 :https://www.thingiverse.com/thing:2838859
 
-This repository contains the code and information to control the EEZYbotARM MK2 robot arm using an ESP32 microcontroller. The EEZYbotARM MK2 and MK3 are open-source 3D-printable robot arms that can be found on Thingiverse.
 
 ## Introduction
 
 The EEZYbotARM MK2 is a versatile and affordable robot arm that you can build using 3D-printed parts. It can be controlled via an ESP32 microcontroller, which serves as a web server for sending commands to the robot arm. The control interface is provided through the included `index.html` app.
 
-## Video
+## Videos
 
 https://youtu.be/PwJwjXMDmXA
 https://youtu.be/KiZO1xTcmOE
