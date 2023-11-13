@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+input[type=range] {
+  width: 80%; /* Specific width is required for Firefox. */
+}
+
+textarea {
+width: 99%;
+height: 150px;
+}
+
+.btn_normal {
+  width: 49%;
+  height:50pt;
+}
+
+.btn_full {
+  width: 98%;
+  height:50pt;
+}
+
+</style>
+</head>
+<body>
+
+<h2>EEZYbotARM Control</h2>
+<form action="">
+    <label for="axis_1">Achse 1:</label><br>
+    <button type="button" data-axis="1" data-mode="minus" onclick="change_range(this);">-</button>
+    <input type="range" id="axis_1" data-axis="1" min="0" max="175" oninput="changeAxisHandler(this);">
+    <button type="button" data-axis="1" data-mode="plus" onclick="change_range(this);">+</button>
+    <br><br>
+
+    <label for="axis_2">Achse 2:</label><br>
+    <button type="button" data-axis="2" data-mode="minus" onclick="change_range(this);">-</button>
+    <input type="range" id="axis_2" data-axis="2" name="axis_2" min="0" max="90" oninput="changeAxisHandler(this);">
+    <button type="button" data-axis="2" data-mode="plus" onclick="change_range(this);">+</button>
+    <br><br>
+
+    <label for="axis_3">Achse 3:</label><br>
+    <button type="button" data-axis="3" data-mode="minus" onclick="change_range(this);">-</button>
+    <input type="range" id="axis_3" data-axis="3" name="axis_3" min="0" max="70" oninput="changeAxisHandler(this);">
+    <button type="button" data-axis="3" data-mode="plus" onclick="change_range(this);">+</button>
+    <br><br>
+
+    <label for="axis_4">Gripper:</label><br>
+    <button type="button" data-axis="4" data-mode="minus" onclick="change_range(this);">-</button>
+    <input type="range" id="axis_4" data-axis="4" name="axis4" min="0" max="175" oninput="changeAxisHandler(this);">
+    <button type="button" data-axis="4" data-mode="plus" onclick="change_range(this);">+</button>
+    <br><br>
+
+    <label for="speed">Speed:</label><br>
+    <button type="button" data-axis="5" data-mode="minus" onclick="change_range(this);">-</button>
+    <input type="range" id="axis_5" min="0" max="100" value="100">
+    <button type="button" data-axis="5" data-mode="plus" onclick="change_range(this);">+</button>
+    <br><br>
+
+    <button type="button" id="toggle_programm" class="btn_normal" data-mode="0" onclick="toggle_program(this);" >Run</button>
+    <button type="button" class="btn_normal" data-axis="4" data-mode="0" onclick="change_teach(this);">Start Teach</button>
+    <br>
+    <br>
+    <div id="teach_area">
+      <button type="button" id="save_teach_pos" onclick="save_teach_position(this);">MOVE Position</button>
+      <button type="button" onclick="add_command('WAIT 1000');">WAIT 1000ms</button>
+      <button type="button" onclick="add_command('INPUT D1');">INPUT D1</button>
+      <button type="button" onclick="add_command('EXIT');">EXIT</button>
+      <button type="button" onclick="go_to_line();">Goto Line</button>
+      <button type="button" onclick="edit_line();">Override Line</button>
+      <button type="button" onclick="clear_teach();">Clear all</button>
+      <textarea id="teach_pos"></textarea>
+    </div>
+    
+    <br>
+    
+
+  </form>
+
+</body>
+
+<script>
+// document.getElementById("toggle_programm").addEventListener("click", change_range(this);
+function clear_teach() {
+  document.getElementById('teach_pos').value = '';
+}
+
+function add_command (cmd) {
+  console.log('add cmd');
+ var newLine = document.getElementById('teach_pos').value;
+ newLine = newLine + cmd ; 
+ newLine = newLine + '\n';
+
+ document.getElementById('teach_pos').value = newLine;
+}
+
+function save_teach_position(event) {
+  console.log('generate teach command');
+
+  accel = document.getElementById('axis_5').value;
+  accel = 100 - accel;
+
+  var newLine = "MOVE " + document.getElementById('axis_1').value + ' '; 
+  newLine = newLine + document.getElementById('axis_2').value + ' '; 
+  newLine = newLine + document.getElementById('axis_3').value + ' '; 
+  newLine = newLine + document.getElementById('axis_4').value + ' '; 
+  newLine = newLine + accel + '\n'; 
+
+  document.getElementById('teach_pos').value = document.getElementById('teach_pos').value + newLine;
+}
+
+function change_teach(event) {
+  console.log(event.innerText);
+
+  if (event.dataset.mode == "0") {
+      event.dataset.mode = "1";
+      event.innerText = "Save new Teach";
+
+      var xhr = new XMLHttpRequest();
+
+      xhr.open("GET","http://192.168.4.1/get_programm");
+      xhr.addEventListener('load', function(event) {
+        if (xhr.status >= 200 && xhr.status < 300) {
+            var val = xhr.responseText.replace(/;/g, '\n');
+
+
+            document.getElementById('teach_pos').value = val;
+
+        } else {
+            console.warn(xhr.statusText, xhr.responseText);
+        }
+      });
+      xhr.send();
+
+      document.getElementById('teach_area').style.visibility = 'visible';
+  }
+  else {
+    if (confirm('Teach new Programm and delete old?')) {
+      var teach_content = document.getElementById('teach_pos').value;
+      teach_content = teach_content.replace(/(?:\r\n|\r|\n)/g, ';');
+
+      xhr = new XMLHttpRequest();
+      xhr.open("GET", "http://192.168.4.1/save_teach?teach="+teach_content, true);
+      xhr.send();  
+      event.dataset.mode = "0";
+      event.innerText = "Start Teach";
+      document.getElementById('teach_area').style.visibility = 'hidden';
+    }
+  }
+  
+  
+}
+
+function toggle_program(event) {
+  console.log(event.innerText);
+  xhr = new XMLHttpRequest();
+
+  if (event.dataset.mode == "0") {
+    xhr.open("GET", "http://192.168.4.1/toggle_programm?state=1", true);
+    event.dataset.mode = "1";
+    event.innerText = "Stop";
+  }
+  else {
+    xhr.open("GET", "http://192.168.4.1/toggle_programm?state=0", true);
+    event.dataset.mode = "0";
+    event.innerText = "Run";
+  }
+  
+  xhr.send();  
+}
+
+function change_range(event) {
+  var val = document.getElementById("axis_"+event.dataset.axis).value;
+  
+  if (event.dataset.mode == "plus") {
+    val = parseInt(val)+1;
+  }
+  else {
+    val = parseInt(val)-1; 
+  }
+
+  document.getElementById("axis_"+event.dataset.axis).value = val;
+
+  if (event.dataset.axis != "5") {
+    changeAxisHandler(document.getElementById("axis_"+event.dataset.axis));
+  }
+  
+}
+
+function changeAxisHandler(event) {
+  console.log("change axis");
+
+  var axis_1  = document.getElementById("axis_1").value;
+  var axis_2  = document.getElementById("axis_2").value;
+  var axis_3  = document.getElementById("axis_3").value;
+  var axis_4  = document.getElementById("axis_4").value;
+
+  accel = document.getElementById('axis_5').value;
+  accel = 100 - accel;
+
+  var xhr = new XMLHttpRequest();
+  xhr.open("GET", "http://192.168.4.1/change_axis?1="+ axis_1 +"&2=" + axis_2 +"&3=" + axis_3 +"&4=" + axis_4 +"&5=" + accel, true);
+  xhr.send();
+}
+
+function handleOrientation(event) {
+  console.log("accel "+ event.alpha);
+  var absolute = event.absolute;
+  var alpha    = Math.round(event.alpha * 100) / 100;
+  var beta     = Math.round(event.beta * 100) / 100;
+  var gamma    = Math.round(event.gamma * 100) / 100;
+
+  // Do stuff with the new orientation data
+  var xhr = new XMLHttpRequest();
+  xhr.open("GET", "http://192.168.4.1/change_axis?axis=1&value=" + event.alpha, true);
+  xhr.send();
+
+  var xhr = new XMLHttpRequest();
+  xhr.open("GET", "http://192.168.4.1/change_axis?axis=2&value=" + event.beta, true);
+  xhr.send();
+
+  var xhr = new XMLHttpRequest();
+  xhr.open("GET", "http://192.168.4.1/change_axis?axis=3&value=" + event.gamma, true);
+  xhr.send();
+}
+
+function go_to_line() {  
+  var cursor_line = select_cursor_line();
+  selectedValue = cursor_line.value.substring(cursor_line.selectionStart, cursor_line.selectionEnd);
+  if (selectedValue.startsWith("MOVE")) {
+    console.log(selectedValue);
+
+    var axis = selectedValue.split(' ');
+
+    document.getElementById("axis_1").value = axis[1];
+    document.getElementById("axis_2").value = axis[2];
+    document.getElementById("axis_3").value = axis[3];
+    document.getElementById("axis_4").value = axis[4];
+
+    accel = axis[5];
+    accel = 100 - accel;
+    document.getElementById('axis_5').value = accel;
+
+    changeAxisHandler(document.getElementById("axis_1"));
+
+  }
+}
+
+function edit_line() {
+  var cursor_line = select_cursor_line();
+
+  accel = document.getElementById('axis_5').value;
+  accel = 100 - accel;
+
+  var replacementText = "MOVE ";
+  replacementText = replacementText + document.getElementById("axis_1").value + " ";
+  replacementText = replacementText + document.getElementById("axis_2").value + " ";
+  replacementText = replacementText + document.getElementById("axis_3").value + " ";
+  replacementText = replacementText + document.getElementById("axis_4").value + " ";
+  replacementText = replacementText + accel;
+
+  var val = document.getElementById('teach_pos').value;
+  document.getElementById('teach_pos').value = val.slice(0, cursor_line.selectionStart) + replacementText + val.slice(cursor_line.selectionEnd);
+  teach_textare_feedback();
+
+}
+
+function select_cursor_line() {
+  var myElement = document.getElementById('teach_pos');
+  var startPosition = myElement.selectionStart;
+
+  // von start zureck prüfen wie oft linebreak kommt
+  var foundedLineBreaks = document.getElementById('teach_pos').value;
+  foundedLineBreaks = foundedLineBreaks.substring(0,startPosition);
+  try {
+		foundedLineBreaks = foundedLineBreaks.match(/[^\n]*\n[^\n]*/gi).length;
+	} catch(e) {
+		foundedLineBreaks = 0;
+	}
+
+  var currentLine = foundedLineBreaks;
+  var lines = myElement.value.split("\n");
+  startPosition = 0
+
+  for(var x = 0; x < lines.length; x++) {
+    if(x == currentLine) {
+      break;
+    }
+      startPosition += (lines[x].length +1);
+    }
+  
+  var endPos = startPosition + lines[currentLine].length;
+
+  myElement.focus();
+  myElement.selectionStart = startPosition;
+  myElement.selectionEnd = endPos;
+
+  return myElement;
+}
+
+function teach_textare_feedback() {
+  document.getElementById("teach_pos").style.backgroundColor = "green";
+  setTimeout(function() {
+    document.getElementById("teach_pos").style.backgroundColor = "white";
+  }, 1000);
+}
+
+window.onload = function() {
+  //window.addEventListener("deviceorientation", handleOrientation, false);
+  document.getElementById('teach_area').style.visibility = 'hidden';
+}
+</script>
+
+</html>
+
