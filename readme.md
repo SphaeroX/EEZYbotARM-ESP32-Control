@@ -20,7 +20,7 @@ https://youtu.be/KiZO1xTcmOE
 
 - Control the EEZYbotARM MK2 using an ESP32 microcontroller.
 - A web-based interface for sending commands to the robot arm.
-- Basic functionality for controlling the robot arm's movements.
+- Basic functionality for controlling the robot arm's movements (SYNC PTP).
 - Teaching capability for recording and playing back sequences of movements.
 
 ## Getting Started
